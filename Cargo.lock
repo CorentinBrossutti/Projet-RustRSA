@@ -111,6 +111,7 @@ name = "rrsa"
 version = "0.1.0"
 dependencies = [
  "num-bigint",
+ "num-traits",
  "rand",
 ]
 
@@ -118,6 +119,7 @@ dependencies = [
 name = "sdpe"
 version = "0.1.0"
 dependencies = [
+ "num-bigint",
  "rrsa",
 ]
 
