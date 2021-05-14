@@ -13,7 +13,7 @@ impl Engine for Rsa
 {
     type EncryptionKey = KeyPair<NumKey, NumKey>;
     type DecryptionKey = KeyPair<NumKey, NumKey>;
-    type MainKey = KeyPair<KeyPair<NumKey, NumKey>, KeyPair<NumKey, NumKey>>;
+    type MainKey = KeyPair<Self::EncryptionKey, Self::DecryptionKey>;
 
     fn generate(&self) -> Self::MainKey {
         let (g_tx, g_rx) = channel::unbounded();
