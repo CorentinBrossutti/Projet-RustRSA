@@ -88,7 +88,7 @@ mod messages
 
 mod engines
 {
-    use crate::{engines::Engine, rsa::Rsa};
+    use crate::engines::{Engine, Cesar};
     use num_bigint::BigUint;
 
 
@@ -97,7 +97,7 @@ mod engines
     {
         let p = BigUint::from(12345u16);
         let mut pp = p.clone();
-        let rsa = Rsa;
+        let rsa = Cesar;
 
         rsa.pad(&mut pp, 1);
         rsa.unpad(&mut pp, 1);
@@ -108,7 +108,7 @@ mod engines
 
     mod rsa
     {
-        use crate::{engines::Engine, rsa::Rsa, messages::*};
+        use crate::{engines::{Engine, Rsa}, messages::*};
         use num_bigint::BigUint;
 
 
@@ -151,7 +151,7 @@ mod engines
 
     mod cesar
     {
-        use crate::{engines::Engine, cesar::Cesar, messages::*};
+        use crate::{engines::{Engine, Cesar}, messages::*};
         use num_bigint::BigUint;
 
 
