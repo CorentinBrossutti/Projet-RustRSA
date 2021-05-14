@@ -9,18 +9,16 @@ const PRIME_ROUNDS: u8 = 16;
 
 pub trait NumUtil
 {
-    type Num;
-
     fn sz(&self, base: u32) -> usize;
     fn sz_b(&self) -> usize
     {
         (self.sz(16) + 1) / 2
     }
 
-    fn expl_f(&self, buf: &mut Vec<Self::Num>, block_sz: usize);
-    fn expl_r(&self, block_sz: usize) -> Vec<Self::Num>
+    fn expl_f(&self, buf: &mut Vec<BigUint>, block_sz: usize);
+    fn expl_r(&self, block_sz: usize) -> Vec<BigUint>
     {
-        let mut buf: Vec<Self::Num> = Vec::new();
+        let mut buf: Vec<BigUint> = Vec::new();
         self.expl_f(&mut buf, block_sz);
 
         buf
@@ -29,14 +27,12 @@ pub trait NumUtil
 
 impl NumUtil for BigUint
 {
-    type Num = BigUint;
-
     fn sz(&self, base: u32) -> usize
     {
         self.to_str_radix(base).len()
     }
 
-    fn expl_f(&self, buf: &mut Vec<Self::Num>, block_sz: usize)
+    fn expl_f(&self, buf: &mut Vec<BigUint>, block_sz: usize)
     {
         let m = BigUint::from(2u8).pow((block_sz * 8).try_into().unwrap());
         let mut op = self.clone();
@@ -47,37 +43,66 @@ impl NumUtil for BigUint
             op /= &m;
         }
 
-        buf.reverse();
         buf.push(BigUint::from(0u8));
+        buf.reverse();
     }
 }
 
 
-pub trait VecUtil<T>
+pub trait VecNumUtil
 {
-    fn join(self) -> T;
+    fn join(&self) -> BigUint;
 }
 
-impl VecUtil<BigUint> for Vec<BigUint>
+impl VecNumUtil for Vec<BigUint>
 {
-    fn join(mut self) -> BigUint
+    fn join(&self) -> BigUint
     {
         if self.len() == 0
         {
-            panic!("VecUtil.join : vecteur vide");
+            panic!("VecNumUtil.join (BigUint) : vecteur vide");
         }
-        else if self.pop().unwrap().is_one()
+        else if self.first().unwrap().is_one()
         {
-            panic!("VecUtil.join : nombre marqué négatif pour BigUint");
+            panic!("VecUtil.join (BigUint) : nombre marqué négatif pour BigUint");
         }
 
         let mut b = BigUint::from(0u8);
         let mut mult;
         let base = BigUint::from(2u8);
 
-        for part in self.iter()
+        let mut iter = self.iter();
+        iter.next();
+        for part in iter
         {
             mult = base.pow((part.sz_b() * 8).try_into().unwrap());
+            b = &b * &mult + part;
+        }
+
+        b
+    }
+}
+
+impl VecNumUtil for Vec<u8>
+{
+    fn join(&self) -> BigUint
+    {
+        if self.len() == 0
+        {
+            panic!("VecNumUtil.join (u8) : vecteur vide");
+        }
+        else if self.first().unwrap().is_one()
+        {
+            panic!("VecNumUtil.join (u8) : nombre marqué négatif pour u8");
+        }
+
+        let mut b = BigUint::from(0u8);
+        let mult = BigUint::from(2u8).pow(8);
+
+        let mut iter = self.iter();
+        iter.next();
+        for part in iter
+        {
             b = &b * &mult + part;
         }
 
