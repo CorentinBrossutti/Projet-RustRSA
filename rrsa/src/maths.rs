@@ -1,5 +1,6 @@
-use num_bigint::{BigInt, BigUint, ToBigInt};
+use num_bigint::{BigInt, BigUint, RandBigInt};
 use num_traits::{One, identities::Zero};
+use rand::Rng;
 use std::convert::TryInto;
 
 const EXPCODE_TAB: [u8; 35] = [ 2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101,103,107,109,113,127,131,137,139,149 ];
@@ -133,9 +134,9 @@ pub fn fmodpow(base: &BigUint, exp: &BigUint, num: &BigUint) -> BigUint
     res
 }
 
-pub fn euclide(a: &BigUint, b: &BigUint) -> BigUint
+pub fn euclide(a: &BigInt, b: &BigInt) -> BigInt
 {
-    let (mut r1, mut r2) = (a.clone().to_bigint().unwrap(), b.clone().to_bigint().unwrap());
+    let (mut r1, mut r2) = (a.clone(), b.clone());
     let (mut u1, mut u2) = (BigInt::from(1u8), BigInt::from(0u8));
     let (mut v1, mut v2) = (BigInt::from(1u8), BigInt::from(0u8));
     let (mut u3, mut v3, mut r3);
@@ -155,7 +156,7 @@ pub fn euclide(a: &BigUint, b: &BigUint) -> BigUint
         v2 = &v3 - &q * &v1;
     }
 
-    u1.to_biguint().unwrap()
+    u1
 }
 
 pub fn expcode(num: &BigUint) -> Option<BigUint>
@@ -182,4 +183,20 @@ pub fn isprime(num: &BigUint) -> bool
     }
 
     true
+}
+
+pub fn rand_primelike(szb: u64) -> BigUint
+{
+    let mut b = rand::thread_rng().gen_biguint(szb * 8);
+    b /= 10u8;
+    b *= 10u8;
+
+    let mut digit = 0u8;
+    while digit % 2 == 0 || digit == 5
+    {
+        digit = rand::thread_rng().gen_range(1..10);
+    }
+    b += digit;
+
+    b
 }

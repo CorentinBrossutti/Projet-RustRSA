@@ -18,6 +18,17 @@ pub struct NumKey
     pub value: BigUint
 }
 
+impl NumKey
+{
+    pub fn from(num: &BigUint) -> NumKey
+    {
+        NumKey
+        {
+            value: num.clone()
+        }
+    }
+}
+
 impl Key for NumKey
 {
     fn from_str(val: &str) -> Self 
@@ -31,17 +42,6 @@ impl Key for NumKey
     fn serialize_str(&self) -> String 
     {
         self.value.to_str_radix(36) 
-    }
-}
-
-impl NumKey
-{
-    pub fn from(num: BigUint) -> NumKey
-    {
-        NumKey
-        {
-            value: num
-        }
     }
 }
 

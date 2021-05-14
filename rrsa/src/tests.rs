@@ -30,14 +30,14 @@ mod maths
 
 
     use crate::maths;
-    use num_bigint::BigUint;
+    use num_bigint::{BigUint, BigInt};
     use num_traits::ToPrimitive;
 
 
     #[test]
     fn euclide() 
     {
-        let (a, b) = (BigUint::from(234u32), BigUint::from(267u32));
+        let (a, b) = (BigInt::from(234u32), BigInt::from(267u32));
         assert_eq!(8u32, maths::euclide(&a, &b).to_u32().unwrap());
     }
 
@@ -81,7 +81,7 @@ mod messages
         let s = "test";
         let msg = Message::str(s).build();
 
-        assert_eq!(s, msg.to_str());
+        assert_eq!(s, msg.to_str().unwrap());
     }
 }
 
@@ -106,12 +106,18 @@ mod engines
     }
 
 
-    #[cfg(not(test))]
     mod rsa
     {
         use crate::{engines::Engine, rsa::Rsa, messages::*};
         use num_bigint::BigUint;
 
+
+        #[test]
+        fn generate()
+        {
+            let rsa = Rsa;
+            rsa.generate();
+        }
 
         #[test]
         fn encode_decode()
@@ -138,7 +144,7 @@ mod engines
             rsa.encrypt(&mut msg, &k.0);
             rsa.decrypt(&mut msg, &k.1);
 
-            assert_eq!(smsg, msg.to_str());
+            assert_eq!(smsg, msg.to_str().unwrap());
         }
     }
 
@@ -174,7 +180,7 @@ mod engines
             cesar.encrypt(&mut msg, &k);
             cesar.decrypt(&mut msg, &k);
 
-            assert_eq!(smsg, msg.to_str());
+            assert_eq!(smsg, msg.to_str().unwrap());
         }
     }
 }

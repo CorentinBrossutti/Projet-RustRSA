@@ -1,3 +1,5 @@
+use std::string::FromUtf8Error;
+
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
 use crate::{maths::{NumUtil, VecNumUtil}, engines};
@@ -124,7 +126,7 @@ impl Message
         self.nval.expl_f(&mut self.parts, self.bsize);
     }
 
-    pub fn to_str(&self) -> String
+    pub fn to_str(&self) -> Result<String, FromUtf8Error>
     {
         let v = self.nval.expl_r(1);
         let mut it = v.iter();
@@ -133,6 +135,6 @@ impl Message
             num.to_u8().unwrap_or(0x3f)
         }).collect();
 
-        String::from_utf8(bytes).unwrap()
+        String::from_utf8(bytes)
     }
 }
