@@ -12,7 +12,7 @@ impl Engine for Cesar
     type MainKey = NumKey;
 
     fn generate(&self) -> Self::MainKey {
-        NumKey::from(&rand::thread_rng().gen_biguint(16))
+        NumKey::from(rand::thread_rng().gen_biguint(16))
     }
 
     fn run_crypt(&self, num: &mut num_bigint::BigUint, key: &Self::EncryptionKey) {

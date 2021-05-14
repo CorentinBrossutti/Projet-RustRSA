@@ -4,6 +4,7 @@ use num_bigint::BigUint;
 use num_traits::Num;
 
 const KEY_SERIAL_DELIMITER: &str = "::";
+const KEY_SERIAL_RADIX: u8 = 36;
 
 
 pub trait Key
@@ -20,11 +21,11 @@ pub struct NumKey
 
 impl NumKey
 {
-    pub fn from(num: &BigUint) -> NumKey
+    pub fn from(value: BigUint) -> NumKey
     {
         NumKey
         {
-            value: num.clone()
+            value
         }
     }
 }
@@ -35,13 +36,13 @@ impl Key for NumKey
     {
         NumKey
         {
-            value: BigUint::from_str_radix(val, 36).unwrap()
+            value: BigUint::from_str_radix(val, KEY_SERIAL_RADIX.into()).unwrap()
         }    
     }
 
     fn serialize_str(&self) -> String 
     {
-        self.value.to_str_radix(36) 
+        self.value.to_str_radix(KEY_SERIAL_RADIX.into()) 
     }
 }
 

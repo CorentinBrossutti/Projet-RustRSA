@@ -66,8 +66,8 @@ impl Engine for Rsa
         }
 
         KeyPair::from(
-            KeyPair::from(NumKey::from(&n), NumKey::from(&e)), 
-            KeyPair::from(NumKey::from(&n), NumKey::from(&d.to_biguint().unwrap())))
+            KeyPair::from(NumKey::from(n.clone()), NumKey::from(e)), 
+            KeyPair::from(NumKey::from(n), NumKey::from(d.to_biguint().unwrap())))
     }
 
     fn run_crypt(&self, num: &mut num_bigint::BigUint, key: &Self::EncryptionKey) {

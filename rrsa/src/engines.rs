@@ -61,4 +61,9 @@ pub trait Engine
         message.encrypted = false;
         message.refresh_nval();
     }
+
+    fn operate(&self, op: &str, args: &std::env::Args)
+    {
+        todo!();
+    }
 }
