@@ -187,7 +187,7 @@ mod engines
         fn generate()
         {
             let rsa = Rsa;
-            let _k = rsa.generate();
+            let _k = rsa.gen_def();
         }
 
         #[test]
@@ -196,7 +196,7 @@ mod engines
             let p = BigUint::from(12345u16);
             let mut pp = p.clone();
             let rsa = Rsa;
-            let k = rsa.generate();
+            let k = rsa.gen_def();
 
             rsa.encode(&mut pp, &k.0, 1);
             rsa.decode(&mut pp, &k.1, 1);
@@ -209,7 +209,7 @@ mod engines
         {
             let mut msg = Message::str(String::from("test rsa")).build();
             let rsa = Rsa;
-            let k = rsa.generate();
+            let k = rsa.gen_def();
 
             rsa.encrypt(&mut msg, &k.0);
             let mut msg = Message::parts_str(msg.to_parts_str(), true).build();
@@ -232,7 +232,7 @@ mod engines
             let p = BigUint::from(12345u16);
             let mut pp = p.clone();
             let cesar = Cesar;
-            let k = cesar.generate();
+            let k = cesar.gen_def();
 
             cesar.encode(&mut pp, &k, 1);
             cesar.decode(&mut pp, &k, 1);
@@ -245,7 +245,7 @@ mod engines
         {
             let mut msg = Message::str(String::from("test cesar")).build();
             let cesar = Cesar;
-            let k = cesar.generate();
+            let k = cesar.gen_def();
 
             cesar.encrypt(&mut msg, &k);
             let mut msg = Message::parts_str(msg.to_parts_str(), true).build();

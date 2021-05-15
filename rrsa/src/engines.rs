@@ -1,12 +1,12 @@
-use crate::{keys::*, maths::{self, NumUtil}, messages::Message};
-use std::{convert::TryInto, sync::{Arc, atomic}, thread};
+use crate::{keys::*, maths, messages::Message};
+use std::{sync::{Arc, atomic}, thread};
 use crossbeam::channel;
 use num_bigint::{BigUint, RandBigInt, ToBigInt};
 use num_traits::Signed;
 
 
-pub const PADSIZE_DEF: usize = 1;
-pub const BSIZE_DEF: usize = 8;
+pub const PADSIZE_DEF: u32 = 1;
+pub const BSIZE_DEF: u32 = 8;
 
 pub trait Engine
 {
@@ -14,30 +14,31 @@ pub trait Engine
     type DecryptionKey : Key;
     type MainKey : Key;
 
-    fn generate(&self) -> Self::MainKey;
+    fn generate(&self, sz_b: u64) -> Self::MainKey;
+    fn gen_def(&self) -> Self::MainKey;
     fn run_crypt(&self, num: &mut BigUint, key: &Self::EncryptionKey);
     fn run_decrypt(&self, num: &mut BigUint, key: &Self::DecryptionKey);
 
-    fn pad(&self, num: &mut BigUint, padsize: usize)
+    fn pad(&self, num: &mut BigUint, padsize: u32)
     {
-        let bits: u32 = (padsize * 8).try_into().unwrap();
+        let bits: u32 = padsize * 8;
 
         *num *= BigUint::from(2u8).pow(bits);
         *num += rand::thread_rng().gen_biguint(bits.into());
     }
 
-    fn unpad(&self, num: &mut BigUint, padsize: usize)
+    fn unpad(&self, num: &mut BigUint, padsize: u32)
     {
-        *num /= BigUint::from(2u8).pow((padsize * 8).try_into().unwrap());
+        *num /= BigUint::from(2u8).pow(padsize * 8);
     }
 
-    fn encode(&self, num: &mut BigUint, key: &Self::EncryptionKey, padsize: usize)
+    fn encode(&self, num: &mut BigUint, key: &Self::EncryptionKey, padsize: u32)
     {
         self.pad(num, padsize);
         self.run_crypt(num, key);
     }
 
-    fn decode(&self, num: &mut BigUint, key: &Self::DecryptionKey, padsize: usize)
+    fn decode(&self, num: &mut BigUint, key: &Self::DecryptionKey, padsize: u32)
     {
         self.run_decrypt(num, key);
         self.unpad(num, padsize);
@@ -49,6 +50,7 @@ pub trait Engine
         {
             self.encode(part, key, message.padsize);
         }
+        println!();
         message.encrypted = true;
         message.refresh_nval();
     }
@@ -73,8 +75,13 @@ impl Engine for Cesar
     type DecryptionKey = NumKey;
     type MainKey = NumKey;
 
-    fn generate(&self) -> Self::MainKey {
-        NumKey::from(rand::thread_rng().gen_biguint(16))
+    fn generate(&self, sz_b: u64) -> Self::MainKey {
+        NumKey::from(rand::thread_rng().gen_biguint(sz_b * 8))
+    }
+
+    fn gen_def(&self) -> Self::MainKey 
+    {
+        self.generate(8)
     }
 
     fn run_crypt(&self, num: &mut BigUint, key: &Self::EncryptionKey) {
@@ -88,7 +95,7 @@ impl Engine for Cesar
 
 
 /// Taille des entiers premiers (p et q) à générer. Pour du RSA-2048 (par défaut), on génère 128 octets.
-const PRIME_SIZEB: u16 = 128;
+const PRIME_SIZEB: u64 = 128;
 const GEN_THREADS: u8 = 2;
 
 pub type PublicKey = KeyPair<NumKey, NumKey>;
@@ -103,7 +110,7 @@ impl Engine for Rsa
     type DecryptionKey = PrivateKey;
     type MainKey = RsaKey;
 
-    fn generate(&self) -> Self::MainKey {
+    fn generate(&self, sz_b: u64) -> Self::MainKey {
         let (g_tx, g_rx) = channel::unbounded();
         let (f_tx, f_rx) = channel::unbounded();
 
@@ -122,7 +129,7 @@ impl Engine for Rsa
             thread::spawn(move || {
                 while working_g_c.load(atomic::Ordering::Relaxed)
                 {
-                    g_tx_c.send(maths::rand_primelike(PRIME_SIZEB.into())).expect("Rsa.generate : erreur dans la génération.");
+                    g_tx_c.send(maths::rand_primelike(sz_b)).expect("Rsa.generate : erreur dans la génération.");
                 }
             });
 
@@ -157,6 +164,11 @@ impl Engine for Rsa
         KeyPair::from(
             KeyPair::from(NumKey::from(n.clone()), NumKey::from(e)), 
             KeyPair::from(NumKey::from(n), NumKey::from(d.to_biguint().unwrap())))
+    }
+
+    fn gen_def(&self) -> Self::MainKey 
+    {
+        self.generate(PRIME_SIZEB)    
     }
 
     fn run_crypt(&self, num: &mut BigUint, key: &Self::EncryptionKey) {

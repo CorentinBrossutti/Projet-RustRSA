@@ -6,14 +6,14 @@ use std::convert::TryInto;
 
 pub trait NumUtil
 {
-    fn sz(&self, radix: u32) -> usize;
-    fn sz_b(&self) -> usize
+    fn sz(&self, radix: u32) -> u32;
+    fn sz_b(&self) -> u32
     {
         (self.sz(16) + 1) / 2
     }
 
-    fn expl_f(&self, buf: &mut Vec<BigUint>, block_sz: usize);
-    fn expl_r(&self, block_sz: usize) -> Vec<BigUint>
+    fn expl_f(&self, buf: &mut Vec<BigUint>, block_sz: u32);
+    fn expl_r(&self, block_sz: u32) -> Vec<BigUint>
     {
         let mut buf: Vec<BigUint> = Vec::new();
         self.expl_f(&mut buf, block_sz);
@@ -24,14 +24,14 @@ pub trait NumUtil
 
 impl NumUtil for BigUint
 {
-    fn sz(&self, radix: u32) -> usize
+    fn sz(&self, radix: u32) -> u32
     {
-        self.to_str_radix(radix).len()
+        self.to_str_radix(radix).len().try_into().unwrap()
     }
 
-    fn expl_f(&self, buf: &mut Vec<BigUint>, block_sz: usize)
+    fn expl_f(&self, buf: &mut Vec<BigUint>, block_sz: u32)
     {
-        let m = BigUint::from(2u8).pow((block_sz * 8).try_into().unwrap());
+        let m = BigUint::from(2u8).pow(block_sz * 8);
         let mut op = self.clone();
 
         while !op.is_zero()
@@ -65,7 +65,7 @@ impl VecNumUtil for Vec<BigUint>
 
         for part in self
         {
-            mult = base.pow((part.sz_b() * 8).try_into().unwrap());
+            mult = base.pow(part.sz_b() * 8);
             b = &b * &mult + part;
         }
 

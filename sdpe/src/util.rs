@@ -34,7 +34,7 @@ impl GenEngine
                 match op
                 {
                     "gen" => {
-                        write(args.value_of("keyfile").unwrap(), rsa.generate().serialize_str()).expect("Impossible d'écrire la clé dans le fichier clé.");
+                        write(args.value_of("keyfile").unwrap(), rsa.gen_def().serialize_str()).expect("Impossible d'écrire la clé dans le fichier clé.");
                         println!("Clé générée et écrite avec succès.");
                     },
                     "encrypt" => {

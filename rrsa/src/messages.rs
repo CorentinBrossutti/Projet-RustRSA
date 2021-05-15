@@ -3,7 +3,7 @@ use num_bigint::BigUint;
 use num_traits::{Num, ToPrimitive};
 use crate::{maths::{NumUtil, VecNumUtil}, engines};
 
-const NUM_STRING_RADIX: u8 = 36;
+const NUM_STRING_RADIX: u32 = 36;
 const PARTS_STR_SEP: &str = ":";
 
 pub struct MessageBuilder
@@ -11,20 +11,20 @@ pub struct MessageBuilder
     nval: Option<BigUint>,
     parts: Option<Vec<BigUint>>,
     strv: Option<String>,
-    bsize: Option<usize>,
-    padsize: Option<usize>,
+    bsize: Option<u32>,
+    padsize: Option<u32>,
     encrypted: Option<bool>
 }
 
 impl MessageBuilder
 {
-    pub fn bsize(mut self, bsize: usize) -> Self
+    pub fn bsize(mut self, bsize: u32) -> Self
     {
         self.bsize = Some(bsize);
         self
     }
 
-    pub fn padsize(mut self, padsize: usize) -> Self
+    pub fn padsize(mut self, padsize: u32) -> Self
     {
         self.padsize = Some(padsize);
         self
@@ -52,8 +52,8 @@ pub struct Message
 {
     pub nval: BigUint,
     pub parts: Vec<BigUint>,
-    pub bsize: usize,
-    pub padsize: usize,
+    pub bsize: u32,
+    pub padsize: u32,
     pub encrypted: bool
 }
 
@@ -87,7 +87,7 @@ impl Message
 
     pub fn nstr(nstr: String, encrypted: bool) -> MessageBuilder
     {
-        Message::num(BigUint::from_str_radix(nstr.as_str(), NUM_STRING_RADIX.into()).unwrap(), encrypted)
+        Message::num(BigUint::from_str_radix(nstr.as_str(), NUM_STRING_RADIX).unwrap(), encrypted)
     }
 
     pub fn parts(parts: Vec<BigUint>, encrypted: bool) -> MessageBuilder
@@ -111,7 +111,7 @@ impl Message
     pub fn parts_str(pstr: String, encrypted: bool) -> MessageBuilder
     {
         Message::parts(pstr.split(PARTS_STR_SEP).map(| ps | {
-            BigUint::from_str_radix(ps, NUM_STRING_RADIX.into()).unwrap()
+            BigUint::from_str_radix(ps, NUM_STRING_RADIX).unwrap()
         }).collect(), encrypted)
     }
 
@@ -143,13 +143,13 @@ impl Message
 
     pub fn to_nstr(&self) -> String
     {
-        self.nval.to_str_radix(NUM_STRING_RADIX.into())
+        self.nval.to_str_radix(NUM_STRING_RADIX)
     }
 
     pub fn to_parts_str(&self) -> String
     {
         let parts_str: Vec<String> = self.parts.iter().map(| part | {
-            part.to_str_radix(NUM_STRING_RADIX.into())
+            part.to_str_radix(NUM_STRING_RADIX)
         }).collect();
         parts_str.join(PARTS_STR_SEP)
     }
