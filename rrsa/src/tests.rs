@@ -125,13 +125,13 @@ mod keys
     #[test]
     fn from_str()
     {
-        assert_eq!(BigUint::from(9u8), NumKey::from_str(String::from("9")).value);
+        assert_eq!(BigUint::from(9u8), NumKey::from_str(String::from("9")).unwrap().value);
     }
 
     #[test]
     fn from_str_dpair()
     {
-        let k = RsaKey::from_str(String::from("9::8::7::6"));
+        let k = RsaKey::from_str(String::from("9::8::7::6")).unwrap();
         assert_eq!(k.0.0.value, BigUint::from(9u8));
         assert_eq!(k.0.1.value, BigUint::from(8u8));
         assert_eq!(k.1.0.value, BigUint::from(7u8));
@@ -179,15 +179,78 @@ mod engines
 
     mod rsa
     {
-        use crate::{engines::{Engine, Rsa}, messages::*};
+        use crate::{engines::{Engine, Rsa, GEN_THREADS}, maths::{isprime, rand_primelike}, messages::*};
+        use std::time::Instant;
         use num_bigint::BigUint;
 
 
         #[test]
-        fn generate()
+        fn gen_64()
         {
             let rsa = Rsa;
-            let _k = rsa.gen_def();
+            let _k = rsa.generate(64u64, GEN_THREADS);
+        }
+
+        #[test]
+        fn gen_128()
+        {
+            let rsa = Rsa;
+            let _k = rsa.generate(128u64, GEN_THREADS);
+        }
+
+        #[test]
+        #[ignore = "Trop long"]
+        fn gen_256()
+        {
+            let rsa = Rsa;
+            let _k = rsa.generate(256u64, GEN_THREADS);
+        }
+
+        #[test]
+        #[ignore = "Benchmarking uniquement"]
+        fn gen_time()
+        {
+            let mut tpoint = Instant::now();
+            for _ in 0..100
+            {
+                rand_primelike(64);
+            }
+            println!("Génération 64 octets en {} ms soit {} ms par itération.", tpoint.elapsed().as_millis(), tpoint.elapsed().as_millis() / 100);
+            tpoint = Instant::now();
+            for _ in 0..100
+            {
+                rand_primelike(128);
+            }
+            println!("Génération 128 octets en {} ms soit {} ms par itération.", tpoint.elapsed().as_millis(), tpoint.elapsed().as_millis() / 100);
+            tpoint = Instant::now();
+            for _ in 0..100
+            {
+                rand_primelike(256);
+            }
+            println!("Génération 256 octets en {} ms soit {} ms par itération.", tpoint.elapsed().as_millis(), tpoint.elapsed().as_millis() / 100);
+
+            let (n64, n128, n256) = (rand_primelike(64), rand_primelike(128), rand_primelike(256));
+
+            tpoint = Instant::now();
+            for _ in 0..100
+            {
+                isprime(&n64);
+            }
+            println!("Vérification 64 octets en {} ms soit {} ms par itération.", tpoint.elapsed().as_millis(), tpoint.elapsed().as_millis() / 100);
+            tpoint = Instant::now();
+            for _ in 0..100
+            {
+                isprime(&n128);
+            }
+            println!("Vérification 128 octets en {} ms soit {} ms par itération.", tpoint.elapsed().as_millis(), tpoint.elapsed().as_millis() / 100);
+            tpoint = Instant::now();
+            for _ in 0..100
+            {
+                isprime(&n256);
+            }
+            println!("Vérification 256 octets en {} ms soit {} ms par itération.", tpoint.elapsed().as_millis(), tpoint.elapsed().as_millis() / 100);
+
+            panic!();
         }
 
         #[test]
@@ -214,6 +277,33 @@ mod engines
             rsa.encrypt(&mut msg, &k.0);
             let mut msg = Message::parts_str(msg.to_parts_str(), true).build();
             rsa.decrypt(&mut msg, &k.1);
+
+            assert_eq!("test rsa", msg.to_str().unwrap());
+        }
+
+        #[test]
+        fn e_d_inv()
+        {
+            let mut msg = Message::str(String::from("test rsa")).build();
+            let rsa = Rsa;
+            let k = rsa.gen_def();
+
+            rsa.encrypt(&mut msg, &k.1);
+            //let mut msg = Message::parts_str(msg.to_parts_str(), true).build();
+            rsa.decrypt(&mut msg, &k.0);
+            
+            assert_eq!("test rsa", msg.to_str().unwrap());
+        }
+
+        #[test]
+        fn sign_verify()
+        {
+            let mut msg = Message::str(String::from("test rsa")).build();
+            let rsa = Rsa;
+            let k = rsa.gen_def();
+
+            rsa.encrypt(&mut msg, &k.1);
+            rsa.decrypt(&mut msg, &k.0);
 
             assert_eq!("test rsa", msg.to_str().unwrap());
         }

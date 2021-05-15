@@ -14,7 +14,7 @@ pub trait Engine
     type DecryptionKey : Key;
     type MainKey : Key;
 
-    fn generate(&self, sz_b: u64) -> Self::MainKey;
+    fn generate(&self, sz_b: u64, n_threads: u8) -> Self::MainKey;
     fn gen_def(&self) -> Self::MainKey;
     fn run_crypt(&self, num: &mut BigUint, key: &Self::EncryptionKey);
     fn run_decrypt(&self, num: &mut BigUint, key: &Self::DecryptionKey);
@@ -50,7 +50,6 @@ pub trait Engine
         {
             self.encode(part, key, message.padsize);
         }
-        println!();
         message.encrypted = true;
         message.refresh_nval();
     }
@@ -75,13 +74,13 @@ impl Engine for Cesar
     type DecryptionKey = NumKey;
     type MainKey = NumKey;
 
-    fn generate(&self, sz_b: u64) -> Self::MainKey {
+    fn generate(&self, sz_b: u64, _: u8) -> Self::MainKey {
         NumKey::from(rand::thread_rng().gen_biguint(sz_b * 8))
     }
 
     fn gen_def(&self) -> Self::MainKey 
     {
-        self.generate(8)
+        self.generate(8, 0)
     }
 
     fn run_crypt(&self, num: &mut BigUint, key: &Self::EncryptionKey) {
@@ -95,8 +94,9 @@ impl Engine for Cesar
 
 
 /// Taille des entiers premiers (p et q) à générer. Pour du RSA-2048 (par défaut), on génère 128 octets.
-const PRIME_SIZEB: u64 = 128;
-const GEN_THREADS: u8 = 2;
+pub const PRIME_SIZEB: u64 = 128;
+/// Nombre de threads pour la génération. Ils ne sont utilisés que pour la vérification, très consommatrice en temps processeur
+pub const GEN_THREADS: u8 = 3;
 
 pub type PublicKey = KeyPair<NumKey, NumKey>;
 pub type PrivateKey = KeyPair<NumKey, NumKey>;
@@ -110,29 +110,21 @@ impl Engine for Rsa
     type DecryptionKey = PrivateKey;
     type MainKey = RsaKey;
 
-    fn generate(&self, sz_b: u64) -> Self::MainKey {
+    fn generate(&self, sz_b: u64, n_threads: u8) -> Self::MainKey 
+    {
         let (g_tx, g_rx) = channel::unbounded();
         let (f_tx, f_rx) = channel::unbounded();
 
         let working = Arc::new(atomic::AtomicBool::new(true));
-
-        for _ in 0..GEN_THREADS
+        
+        for _ in 0..n_threads
         {
-            let g_tx_c = g_tx.clone();
             let g_rx_c = g_rx.clone();
-
+            
             let f_tx_c = f_tx.clone();
             let f_rx_c = f_rx.clone();
-
-            let (working_g_c, working_f_c) = (working.clone(), working.clone());
-
-            thread::spawn(move || {
-                while working_g_c.load(atomic::Ordering::Relaxed)
-                {
-                    g_tx_c.send(maths::rand_primelike(sz_b)).expect("Rsa.generate : erreur dans la génération.");
-                }
-            });
-
+            
+            let working_f_c = working.clone();
             thread::spawn(move || {
                 let mut temp;
                 while working_f_c.load(atomic::Ordering::Relaxed)
@@ -150,6 +142,11 @@ impl Engine for Rsa
             });
         }
 
+        while working.load(atomic::Ordering::Relaxed)
+        {
+            g_tx.send(maths::rand_primelike(sz_b)).expect("Rsa.generate : erreur dans la génération.");
+        }
+
         let (p, q) = (f_rx.recv().unwrap(), f_rx.recv().unwrap());
         let n = &p * &q;
         let ind = (p - 1u8) * (q - 1u8);
@@ -163,12 +160,13 @@ impl Engine for Rsa
 
         KeyPair::from(
             KeyPair::from(NumKey::from(n.clone()), NumKey::from(e)), 
-            KeyPair::from(NumKey::from(n), NumKey::from(d.to_biguint().unwrap())))
+            KeyPair::from(NumKey::from(n), NumKey::from(d.to_biguint().unwrap()))
+        )
     }
 
     fn gen_def(&self) -> Self::MainKey 
     {
-        self.generate(PRIME_SIZEB)    
+        self.generate(PRIME_SIZEB, GEN_THREADS)  
     }
 
     fn run_crypt(&self, num: &mut BigUint, key: &Self::EncryptionKey) {

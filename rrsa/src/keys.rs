@@ -1,5 +1,5 @@
 use std::ops::Deref;
-use num_bigint::BigUint;
+use num_bigint::{BigUint, ParseBigIntError};
 use num_traits::Num;
 
 
@@ -8,7 +8,7 @@ const KEY_SERIAL_RADIX: u8 = 36;
 
 pub trait Key
 {
-    fn from_str(val: String) -> Self where Self : Sized;
+    fn from_str(val: String) -> Result<Self, ParseBigIntError> where Self : Sized;
     fn serialize_str(&self) -> String; 
 }
 
@@ -31,12 +31,13 @@ impl NumKey
 
 impl Key for NumKey
 {
-    fn from_str(val: String) -> Self 
+    fn from_str(val: String) -> Result<Self, ParseBigIntError>
     {
-        NumKey
+        let value = BigUint::from_str_radix(&val, KEY_SERIAL_RADIX.into())?;
+        Ok(NumKey
         {
-            value: BigUint::from_str_radix(&val, KEY_SERIAL_RADIX.into()).unwrap()
-        }    
+            value
+        })
     }
 
     fn serialize_str(&self) -> String 
@@ -67,7 +68,7 @@ impl<T : Key, U : Key> KeyPair<T, U>
 
 impl<T : Key, U : Key> Key for KeyPair<T, U>
 {
-    fn from_str(val: String) -> Self 
+    fn from_str(val: String) -> Result<Self, ParseBigIntError>
     {
         let parts: Vec<&str> = val.split(KEY_SERIAL_DELIMITER).collect();
         let len = parts.len();
@@ -77,10 +78,9 @@ impl<T : Key, U : Key> Key for KeyPair<T, U>
             panic!("KeyPair.from_str : impossible de construire une clé depuis un nombre de parties impair.");
         }
 
-        KeyPair(
-            T::from_str(parts[..(len / 2)].join(KEY_SERIAL_DELIMITER)), 
-            U::from_str(parts[(len / 2)..len].join(KEY_SERIAL_DELIMITER))
-        )
+        let ts = T::from_str(parts[..(len / 2)].join(KEY_SERIAL_DELIMITER))?;
+        let us = U::from_str(parts[(len / 2)..len].join(KEY_SERIAL_DELIMITER))?;
+        Ok(KeyPair(ts, us))
     }
 
     fn serialize_str(&self) -> String
