@@ -3,14 +3,10 @@ use num_traits::{One, identities::Zero};
 use rand::Rng;
 use std::convert::TryInto;
 
-const EXPCODE_TAB: [u8; 35] = [ 2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101,103,107,109,113,127,131,137,139,149 ];
-const PRIME_RN: u32 = 12737213u32;
-const PRIME_ROUNDS: u8 = 16;
-
 
 pub trait NumUtil
 {
-    fn sz(&self, base: u32) -> usize;
+    fn sz(&self, radix: u32) -> usize;
     fn sz_b(&self) -> usize
     {
         (self.sz(16) + 1) / 2
@@ -28,9 +24,9 @@ pub trait NumUtil
 
 impl NumUtil for BigUint
 {
-    fn sz(&self, base: u32) -> usize
+    fn sz(&self, radix: u32) -> usize
     {
-        self.to_str_radix(base).len()
+        self.to_str_radix(radix).len()
     }
 
     fn expl_f(&self, buf: &mut Vec<BigUint>, block_sz: usize)
@@ -44,7 +40,6 @@ impl NumUtil for BigUint
             op /= &m;
         }
 
-        buf.push(BigUint::from(0u8));
         buf.reverse();
     }
 }
@@ -52,29 +47,23 @@ impl NumUtil for BigUint
 
 pub trait VecNumUtil
 {
-    fn join(&self) -> BigUint;
+    fn rejoin(&self) -> BigUint;
 }
 
 impl VecNumUtil for Vec<BigUint>
 {
-    fn join(&self) -> BigUint
+    fn rejoin(&self) -> BigUint
     {
-        if self.len() == 0
+        if self.is_empty()
         {
             panic!("VecNumUtil.join (BigUint) : vecteur vide");
-        }
-        else if self.first().unwrap().is_one()
-        {
-            panic!("VecUtil.join (BigUint) : nombre marqué négatif pour BigUint");
         }
 
         let mut b = BigUint::from(0u8);
         let mut mult;
         let base = BigUint::from(2u8);
 
-        let mut iter = self.iter();
-        iter.next();
-        for part in iter
+        for part in self
         {
             mult = base.pow((part.sz_b() * 8).try_into().unwrap());
             b = &b * &mult + part;
@@ -86,23 +75,17 @@ impl VecNumUtil for Vec<BigUint>
 
 impl VecNumUtil for Vec<u8>
 {
-    fn join(&self) -> BigUint
+    fn rejoin(&self) -> BigUint
     {
-        if self.len() == 0
+        if self.is_empty()
         {
             panic!("VecNumUtil.join (u8) : vecteur vide");
-        }
-        else if self.first().unwrap().is_one()
-        {
-            panic!("VecNumUtil.join (u8) : nombre marqué négatif pour u8");
         }
 
         let mut b = BigUint::from(0u8);
         let mult = BigUint::from(2u8).pow(8);
 
-        let mut iter = self.iter();
-        iter.next();
-        for part in iter
+        for part in self
         {
             b = &b * &mult + part;
         }
@@ -111,6 +94,10 @@ impl VecNumUtil for Vec<u8>
     }
 }
 
+
+const EXPCODE_TAB: [u8; 35] = [ 2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101,103,107,109,113,127,131,137,139,149 ];
+const PRIME_RN: u32 = 12737213u32;
+const PRIME_ROUNDS: u8 = 16;
 
 pub fn fmodpow(base: &BigUint, exp: &BigUint, num: &BigUint) -> BigUint
 {

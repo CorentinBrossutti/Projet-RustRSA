@@ -1,15 +1,14 @@
 use std::ops::Deref;
-
 use num_bigint::BigUint;
 use num_traits::Num;
+
 
 const KEY_SERIAL_DELIMITER: &str = "::";
 const KEY_SERIAL_RADIX: u8 = 36;
 
-
 pub trait Key
 {
-    fn from_str(val: &str) -> Self where Self : Sized;
+    fn from_str(val: String) -> Self where Self : Sized;
     fn serialize_str(&self) -> String; 
 }
 
@@ -32,11 +31,11 @@ impl NumKey
 
 impl Key for NumKey
 {
-    fn from_str(val: &str) -> Self 
+    fn from_str(val: String) -> Self 
     {
         NumKey
         {
-            value: BigUint::from_str_radix(val, KEY_SERIAL_RADIX.into()).unwrap()
+            value: BigUint::from_str_radix(&val, KEY_SERIAL_RADIX.into()).unwrap()
         }    
     }
 
@@ -58,34 +57,34 @@ impl Deref for NumKey
 
 pub struct KeyPair<T : Key, U : Key>(pub T, pub U);
 
+impl<T : Key, U : Key> KeyPair<T, U>
+{
+    pub fn from(key1: T, key2: U) -> KeyPair<T, U>
+    {
+        KeyPair(key1, key2)
+    }
+}
+
 impl<T : Key, U : Key> Key for KeyPair<T, U>
 {
-    fn from_str(val: &str) -> Self 
+    fn from_str(val: String) -> Self 
     {
         let parts: Vec<&str> = val.split(KEY_SERIAL_DELIMITER).collect();
         let len = parts.len();
 
         if len % 2 == 1
         {
-            panic!("KeyPair.from_str : impossible de construire une clé depuis des parties impaires.");
+            panic!("KeyPair.from_str : impossible de construire une clé depuis un nombre de parties impair.");
         }
 
         KeyPair(
-            T::from_str(parts[..(len / 2)].join("").as_str()), 
-            U::from_str(parts[(len / 2)..len].join("").as_str())
+            T::from_str(parts[..(len / 2)].join(KEY_SERIAL_DELIMITER)), 
+            U::from_str(parts[(len / 2)..len].join(KEY_SERIAL_DELIMITER))
         )
     }
 
     fn serialize_str(&self) -> String
     {
         format!("{}{}{}", self.0.serialize_str(), KEY_SERIAL_DELIMITER, self.1.serialize_str())
-    }
-}
-
-impl<T : Key, U : Key> KeyPair<T, U>
-{
-    pub fn from(key1: T, key2: U) -> KeyPair<T, U>
-    {
-        KeyPair(key1, key2)
     }
 }

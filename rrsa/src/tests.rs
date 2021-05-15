@@ -24,7 +24,7 @@ mod maths
         fn join_expl() 
         {
             let b = BigUint::from(1267122178333u64);
-            assert_eq!(b, b.expl_r(2).join());
+            assert_eq!(b, b.expl_r(2).rejoin());
         }
     }
 
@@ -73,15 +73,86 @@ mod maths
 mod messages
 {
     use crate::messages::*;
+    use num_bigint::BigUint;
+    use num_traits::Num;
 
 
     #[test]
     fn f_unf()
     {
-        let s = "test";
-        let msg = Message::str(s).build();
+        let msg = Message::str(String::from("test")).build();
 
-        assert_eq!(s, msg.to_str().unwrap());
+        assert_eq!("test", msg.to_str().unwrap());
+    }
+
+    #[test]
+    fn ns_uns()
+    {
+        let msg = Message::nstr(String::from("8a240238dfljqslkfj2378273dfjqldksf8a240238dfljqslkfj2378273dfjqldksf"), true).build();
+
+        assert_eq!(BigUint::from_str_radix("8a240238dfljqslkfj2378273dfjqldksf8a240238dfljqslkfj2378273dfjqldksf", 36).unwrap().to_str_radix(36), msg.to_nstr());
+    }
+
+    #[test]
+    fn bd_dest()
+    {
+        let msg = Message::nstr(String::from("8a240238dfljqslkfj2378273dfjqldksf8a240238dfljqslkfj2378273dfjqldksf8a240238dfljqslkfj2378273dfjqldksf8a240238dfljqslkfj2378273dfjqldksf"), true).build();
+        let parts = msg.parts.clone();
+        let msg = Message::nstr(msg.to_nstr(), true).build();
+
+        for (index, part) in parts.iter().enumerate()
+        {
+            println!("{}", part);
+            assert_eq!(part, &msg.parts[index]);
+        }
+    }
+}
+
+
+mod keys
+{
+    use crate::{engines::RsaKey, keys::{Key, NumKey, KeyPair}};
+    use num_bigint::BigUint;
+
+
+    #[test]
+    fn ser_str()
+    {
+        let k = NumKey::from(BigUint::from(9u8));
+        assert_eq!("9", k.serialize_str());
+    }
+
+    #[test]
+    fn from_str()
+    {
+        assert_eq!(BigUint::from(9u8), NumKey::from_str(String::from("9")).value);
+    }
+
+    #[test]
+    fn from_str_dpair()
+    {
+        let k = RsaKey::from_str(String::from("9::8::7::6"));
+        assert_eq!(k.0.0.value, BigUint::from(9u8));
+        assert_eq!(k.0.1.value, BigUint::from(8u8));
+        assert_eq!(k.1.0.value, BigUint::from(7u8));
+        assert_eq!(k.1.1.value, BigUint::from(6u8));
+    }
+
+    #[test]
+    fn ser_str_dpair()
+    {
+        let k = KeyPair(
+            KeyPair(
+                NumKey::from(BigUint::from(9u8)),
+                NumKey::from(BigUint::from(8u8))
+            ),
+            KeyPair(
+                NumKey::from(BigUint::from(7u8)),
+                NumKey::from(BigUint::from(6u8))
+            )
+        );
+
+        assert_eq!("9::8::7::6", k.serialize_str());
     }
 }
 
@@ -116,7 +187,7 @@ mod engines
         fn generate()
         {
             let rsa = Rsa;
-            rsa.generate();
+            let _k = rsa.generate();
         }
 
         #[test]
@@ -136,15 +207,15 @@ mod engines
         #[test]
         fn encrypt_decrypt()
         {
-            let smsg = "test";
-            let mut msg = Message::str(smsg).build();
+            let mut msg = Message::str(String::from("test rsa")).build();
             let rsa = Rsa;
             let k = rsa.generate();
 
             rsa.encrypt(&mut msg, &k.0);
+            let mut msg = Message::parts_str(msg.to_parts_str(), true).build();
             rsa.decrypt(&mut msg, &k.1);
 
-            assert_eq!(smsg, msg.to_str().unwrap());
+            assert_eq!("test rsa", msg.to_str().unwrap());
         }
     }
 
@@ -172,15 +243,15 @@ mod engines
         #[test]
         fn encrypt_decrypt()
         {
-            let smsg = "test";
-            let mut msg = Message::str(smsg).build();
+            let mut msg = Message::str(String::from("test cesar")).build();
             let cesar = Cesar;
             let k = cesar.generate();
 
             cesar.encrypt(&mut msg, &k);
+            let mut msg = Message::parts_str(msg.to_parts_str(), true).build();
             cesar.decrypt(&mut msg, &k);
 
-            assert_eq!(smsg, msg.to_str().unwrap());
+            assert_eq!("test cesar", msg.to_str().unwrap());
         }
     }
 }

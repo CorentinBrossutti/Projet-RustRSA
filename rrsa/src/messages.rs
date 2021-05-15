@@ -1,9 +1,10 @@
 use std::string::FromUtf8Error;
-
 use num_bigint::BigUint;
-use num_traits::ToPrimitive;
+use num_traits::{Num, ToPrimitive};
 use crate::{maths::{NumUtil, VecNumUtil}, engines};
 
+const NUM_STRING_RADIX: u8 = 36;
+const PARTS_STR_SEP: &str = ":";
 
 pub struct MessageBuilder
 {
@@ -32,17 +33,7 @@ impl MessageBuilder
     pub fn build(self) -> Message
     {
         let bsize = if let Some(bsize) = self.bsize { bsize } else { engines::BSIZE_DEF };
-        let nval = if let Some(nval) = self.nval
-            {
-                nval
-            }
-            else
-            {
-                let mut bytes = self.strv.unwrap().into_bytes();
-                bytes.insert(0, 0u8);
-
-                bytes.join()
-            };
+        let nval = if let Some(nval) = self.nval { nval } else { self.strv.unwrap().into_bytes().rejoin() };
         let parts = if let Some(parts) = self.parts { parts } else { nval.expl_r(bsize) };
 
         Message
@@ -56,6 +47,7 @@ impl MessageBuilder
     }
 }
 
+
 pub struct Message
 {
     pub nval: BigUint,
@@ -67,13 +59,13 @@ pub struct Message
 
 impl Message
 {
-    pub fn str(strv: &str) -> MessageBuilder
+    pub fn str(strv: String) -> MessageBuilder
     {
         MessageBuilder
         {
             nval: None,
             parts: None,
-            strv: Some(String::from(strv)),
+            strv: Some(strv),
             bsize: None,
             padsize: None,
             encrypted: Some(false)
@@ -93,22 +85,34 @@ impl Message
         }
     }
 
+    pub fn nstr(nstr: String, encrypted: bool) -> MessageBuilder
+    {
+        Message::num(BigUint::from_str_radix(nstr.as_str(), NUM_STRING_RADIX.into()).unwrap(), encrypted)
+    }
+
     pub fn parts(parts: Vec<BigUint>, encrypted: bool) -> MessageBuilder
     {
-        if parts.len() == 0
+        if parts.is_empty()
         {
             panic!("Message::parts : impossible de construire un message depuis un ensemble vide.");
         }
 
         MessageBuilder
         {
-            nval: Some(parts.join()),
+            nval: Some(parts.rejoin()),
             parts: Some(parts),
             strv: None,
             bsize: None,
             padsize: None,
             encrypted: Some(encrypted)
         }
+    }
+
+    pub fn parts_str(pstr: String, encrypted: bool) -> MessageBuilder
+    {
+        Message::parts(pstr.split(PARTS_STR_SEP).map(| ps | {
+            BigUint::from_str_radix(ps, NUM_STRING_RADIX.into()).unwrap()
+        }).collect(), encrypted)
     }
 
     pub fn part(&self, index: usize) -> &BigUint
@@ -118,23 +122,35 @@ impl Message
 
     pub fn refresh_nval(&mut self)
     {
-        self.nval = self.parts.join();
+        self.nval = self.parts.rejoin();
     }
 
     pub fn refresh_parts(&mut self)
     {
+        self.parts.clear();
         self.nval.expl_f(&mut self.parts, self.bsize);
     }
 
     pub fn to_str(&self) -> Result<String, FromUtf8Error>
     {
         let v = self.nval.expl_r(1);
-        let mut it = v.iter();
-        it.next();
-        let bytes = it.map(| num | {
+        let bytes = v.iter().map(| num | {
             num.to_u8().unwrap_or(0x3f)
         }).collect();
 
         String::from_utf8(bytes)
+    }
+
+    pub fn to_nstr(&self) -> String
+    {
+        self.nval.to_str_radix(NUM_STRING_RADIX.into())
+    }
+
+    pub fn to_parts_str(&self) -> String
+    {
+        let parts_str: Vec<String> = self.parts.iter().map(| part | {
+            part.to_str_radix(NUM_STRING_RADIX.into())
+        }).collect();
+        parts_str.join(PARTS_STR_SEP)
     }
 }

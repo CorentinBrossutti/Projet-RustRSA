@@ -1,12 +1,12 @@
-use crate::{keys::*, maths, messages::Message};
+use crate::{keys::*, maths::{self, NumUtil}, messages::Message};
 use std::{convert::TryInto, sync::{Arc, atomic}, thread};
 use crossbeam::channel;
 use num_bigint::{BigUint, RandBigInt, ToBigInt};
 use num_traits::Signed;
 
+
 pub const PADSIZE_DEF: usize = 1;
 pub const BSIZE_DEF: usize = 8;
-
 
 pub trait Engine
 {
@@ -77,26 +77,31 @@ impl Engine for Cesar
         NumKey::from(rand::thread_rng().gen_biguint(16))
     }
 
-    fn run_crypt(&self, num: &mut num_bigint::BigUint, key: &Self::EncryptionKey) {
+    fn run_crypt(&self, num: &mut BigUint, key: &Self::EncryptionKey) {
         *num += &key.value;
     }
 
-    fn run_decrypt(&self, num: &mut num_bigint::BigUint, key: &Self::DecryptionKey) {
+    fn run_decrypt(&self, num: &mut BigUint, key: &Self::DecryptionKey) {
         *num -= &key.value;
     }
 }
 
 
-const PRIME_SIZEB: u16 = 64;
+/// Taille des entiers premiers (p et q) à générer. Pour du RSA-2048 (par défaut), on génère 128 octets.
+const PRIME_SIZEB: u16 = 128;
 const GEN_THREADS: u8 = 2;
+
+pub type PublicKey = KeyPair<NumKey, NumKey>;
+pub type PrivateKey = KeyPair<NumKey, NumKey>;
+pub type RsaKey = KeyPair<PublicKey, PrivateKey>;
 
 pub struct Rsa;
 
 impl Engine for Rsa
 {
-    type EncryptionKey = KeyPair<NumKey, NumKey>;
-    type DecryptionKey = KeyPair<NumKey, NumKey>;
-    type MainKey = KeyPair<Self::EncryptionKey, Self::DecryptionKey>;
+    type EncryptionKey = PublicKey;
+    type DecryptionKey = PrivateKey;
+    type MainKey = RsaKey;
 
     fn generate(&self) -> Self::MainKey {
         let (g_tx, g_rx) = channel::unbounded();
@@ -154,11 +159,11 @@ impl Engine for Rsa
             KeyPair::from(NumKey::from(n), NumKey::from(d.to_biguint().unwrap())))
     }
 
-    fn run_crypt(&self, num: &mut num_bigint::BigUint, key: &Self::EncryptionKey) {
+    fn run_crypt(&self, num: &mut BigUint, key: &Self::EncryptionKey) {
         *num = maths::fmodpow(num, &key.1, &key.0);
     }
 
-    fn run_decrypt(&self, num: &mut num_bigint::BigUint, key: &Self::DecryptionKey) {
+    fn run_decrypt(&self, num: &mut BigUint, key: &Self::DecryptionKey) {
         *num = maths::fmodpow(num, &key.1, &key.0)
     }
 }

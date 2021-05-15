@@ -1,22 +1,7 @@
 mod util;
 
 use util::*;
-use rrsa::engines::Rsa;
 
-
-fn resolve(engine: &str) -> Option<GenEngine> 
-{
-    match engine 
-    {
-        "rsa" => Some(GenEngine::Rsa(Rsa {})),
-        _ => None,
-    }
-}
-
-fn engines() -> Vec<String> 
-{
-    vec![String::from("rsa")]
-}
 
 fn main() 
 {
@@ -86,7 +71,7 @@ fn main()
     if matches.is_present("list") 
     {
         println!("Moteurs cryptographiques disponibles :");
-        for engine in engines() 
+        for engine in GenEngine::list()
         {
             println!("- {}", engine);
         }
@@ -97,11 +82,11 @@ fn main()
         println!("- decrypt : Déchiffre le message chiffré écrit dans [input] avec [keyfile] puis l'écrit dans [output]");
         println!("- sign : Signe le message écrit dans [input] avec [keyfile] puis écrit le message chiffré et signé dans [output]");
         println!("- verify : Déchiffre un message signé dans [input] avec [keyfile] puis écrit le résultat pour vérification dans [output]");
-        for engine in engines() 
+        for engine in GenEngine::list()
         {
             println!();
             println!("Opérations spécifiques au moteur {}", engine);
-            if let Some(engine) = resolve(&engine) 
+            if let Some(engine) = GenEngine::resolve(&engine) 
             {
                 for op in engine.oplist() 
                 {
@@ -111,5 +96,14 @@ fn main()
         }
 
         return;
+    }
+
+    if let Some(engine) = GenEngine::resolve(matches.value_of("engine").unwrap())
+    {
+        engine.op(matches.value_of("operation").unwrap(), &matches);
+    }
+    else
+    {
+        println!("Moteur invalide ou non spécifié. Utilisez <sdpe> list pour la liste.");
     }
 }
