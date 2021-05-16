@@ -73,7 +73,7 @@ impl GenEngine
                             }
                             else
                             {
-                                PRIME_SIZEB
+                                RSA_DEF_PRIME_SIZEB
                             };
                         let nthreads: u8 =
                             if args.is_present("genthreads")
@@ -82,7 +82,7 @@ impl GenEngine
                             }
                             else
                             {
-                                GEN_THREADS
+                                RSA_DEF_GEN_THREADS
                             };
                         println!("  Taille de clé : {}", ksize);
                         println!("  Nombre de threads à utiliser : {}", nthreads);
@@ -117,7 +117,7 @@ impl GenEngine
                                 {
                                     print!(".");
                                 }
-                                print!(" {}     ",
+                                print!(" {}  ",
                                     match i % 4
                                     {
                                         0 => "|",

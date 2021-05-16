@@ -179,7 +179,7 @@ mod engines
 
     mod rsa
     {
-        use crate::{engines::{Engine, Rsa, GEN_THREADS}, maths::{isprime, rand_primelike}, messages::*};
+        use crate::{engines::{Engine, Rsa, RSA_DEF_GEN_THREADS}, maths::{isprime, rand_primelike}, messages::*};
         use std::time::Instant;
         use num_bigint::BigUint;
 
@@ -188,14 +188,14 @@ mod engines
         fn gen_64()
         {
             let rsa = Rsa;
-            let _k = rsa.generate(64u64, GEN_THREADS);
+            let _k = rsa.generate(64u64, RSA_DEF_GEN_THREADS);
         }
 
         #[test]
         fn gen_128()
         {
             let rsa = Rsa;
-            let _k = rsa.generate(128u64, GEN_THREADS);
+            let _k = rsa.generate(128u64, RSA_DEF_GEN_THREADS);
         }
 
         #[test]
@@ -203,7 +203,7 @@ mod engines
         fn gen_256()
         {
             let rsa = Rsa;
-            let _k = rsa.generate(256u64, GEN_THREADS);
+            let _k = rsa.generate(256u64, RSA_DEF_GEN_THREADS);
         }
 
         #[test]

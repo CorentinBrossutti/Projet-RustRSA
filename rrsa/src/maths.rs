@@ -4,15 +4,20 @@ use rand::Rng;
 use std::convert::TryInto;
 
 
+/// Trait d'extension pour les grands entiers non signés. Permet notamment leur découpage et l'obtention de leur taille digitale.
 pub trait NumUtil
 {
+    /// Permet d'obtenir le nombre de chiffres du grand entier dans la base `radix`.
     fn sz(&self, radix: u32) -> u32;
+    /// Permet d'obtenir le nombre d'octets utilisé par le grand entier.
     fn sz_b(&self) -> u32
     {
         (self.sz(16) + 1) / 2
     }
 
+    /// Remplit un vecteur de grands entiers en découpant le grand entier sur lequel est appliqué la méthode, chaque bloc de taille maximale `block_sz` octets.
     fn expl_f(&self, buf: &mut Vec<BigUint>, block_sz: u32);
+    /// Découpe l'entier en un vecteur de grands entiers et le retourne, chaque bloc de taille maximale `block_sz` octets.
     fn expl_r(&self, block_sz: u32) -> Vec<BigUint>
     {
         let mut buf: Vec<BigUint> = Vec::new();
@@ -45,8 +50,10 @@ impl NumUtil for BigUint
 }
 
 
+/// Trait d'extension pour les vecteurs de grands entiers. Permet notamment la recomposition de grands nombres.
 pub trait VecNumUtil
 {
+    /// Recompose un grand nombre depuis ses parties (préalablement découpée avec `expl_f` ou `expl_r`)
     fn rejoin(&self) -> BigUint;
 }
 
@@ -97,8 +104,10 @@ impl VecNumUtil for Vec<u8>
 
 const EXPCODE_TAB: [u8; 35] = [ 2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101,103,107,109,113,127,131,137,139,149 ];
 const PRIME_RN: u32 = 12737213u32;
+/// Nombre d'itérations du test de primalité probabiliste à effectuer.
 const PRIME_ROUNDS: u8 = 20;
 
+/// Fonction d'exponentiation rapide, très utile pour le RSA.
 pub fn fmodpow(base: &BigUint, exp: &BigUint, num: &BigUint) -> BigUint
 {
     let mut res = BigUint::from(1u8);
@@ -121,6 +130,7 @@ pub fn fmodpow(base: &BigUint, exp: &BigUint, num: &BigUint) -> BigUint
     res
 }
 
+/// Algorithme d'Euclide pour trouver le PGCD de deux nombres. Utile pour le RSA.
 pub fn euclide(a: &BigInt, b: &BigInt) -> BigInt
 {
     let (mut r1, mut r2) = (a.clone(), b.clone());
@@ -146,6 +156,7 @@ pub fn euclide(a: &BigInt, b: &BigInt) -> BigInt
     u1
 }
 
+/// Retourne le code d'exposant d'un nombre.
 pub fn expcode(num: &BigUint) -> Option<BigUint>
 {
     for &i in EXPCODE_TAB.iter()
@@ -159,6 +170,8 @@ pub fn expcode(num: &BigUint) -> Option<BigUint>
     None
 }
 
+/// Retourne vrai si le grand entier `num` est premier, faux sinon.
+/// Le test est probabiliste et peut se tromper ; avec un nombre assez grand d'itérations `PRIME_ROUNDS`, cela est toutefois peu probable.
 pub fn isprime(num: &BigUint) -> bool
 {
     for _ in 0..PRIME_ROUNDS
@@ -172,6 +185,7 @@ pub fn isprime(num: &BigUint) -> bool
     true
 }
 
+/// Retourne un grand entier constitué de `szb` octets avec une bonne probabilité qu'il soit premier.
 pub fn rand_primelike(szb: u64) -> BigUint
 {
     let mut b = rand::thread_rng().gen_biguint(szb * 8);

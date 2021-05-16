@@ -3,16 +3,22 @@ use num_bigint::{BigUint, ParseBigIntError};
 use num_traits::Num;
 
 
+/// Délimiteur des différentes parties des clés pour la sérialisation textuelle.
 const KEY_SERIAL_DELIMITER: &str = "::";
+/// Base (radix) à utiliser pour sérialiser les parties numériques des clés.
 const KEY_SERIAL_RADIX: u8 = 36;
 
+/// Trait à implémenter par toutes les clés, impose de définir certaines méthodes liées à la sérialisation.
 pub trait Key
 {
+    /// Permet d'obtenir une clé depuis sa sérialisation textuelle.
     fn from_str(val: String) -> Result<Self, ParseBigIntError> where Self : Sized;
+    /// Retourne la sérialisation textuelle de la clé.
     fn serialize_str(&self) -> String; 
 }
 
 
+/// Clé numérique, contient juste un grand entier positif.
 pub struct NumKey
 {
     pub value: BigUint
@@ -56,6 +62,7 @@ impl Deref for NumKey
 }
 
 
+/// Une paire de clé dont les types sont génériques. La structure elle-même est considérée comme une clé.
 pub struct KeyPair<T : Key, U : Key>(pub T, pub U);
 
 impl<T : Key, U : Key> KeyPair<T, U>
