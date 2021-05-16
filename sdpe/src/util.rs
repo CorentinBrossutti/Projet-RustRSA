@@ -16,25 +16,53 @@ impl GenEngine
         ]
     }
 
-    pub fn oplist(&self) -> Vec<String>
+    pub fn oplist(&self) -> Vec<(String, String, String)>
     {
         match self
         {
             Self::Rsa(_) => vec![
-                String::from("export : Extrait la partie d'une clé. Le type de clé détermine le type de destination ; la partie exportée sera écrite dans le fichier de sortie (--output)."),
-                String::from("          Le fichier clé doit contenir une clé principale (paire clé publique / privée)."),
-                String::from("          Les types possibles sont PUBLIC, PRIVATE, MAIN (copie de la clé principale).")
-            ]
+                (String::from("export"),
+                String::from("export : Extrait la partie d'une clé. Le type de clé détermine le type de destination ; la partie exportée sera écrite dans le fichier de sortie (--output).\n\
+    Le fichier clé doit contenir une clé principale (paire clé publique / privée).\n\
+    Les types possibles sont PUBLIC, PRIVATE, MAIN (copie de la clé principale).\n"),
+                String::from("Export"))]
         }
     }
 
     pub fn op(&self, op: &str, args: &clap::ArgMatches)
     {
         println!();
+        println!("==========[Simple Data Privacy Engine]==========");
+        // Nécessaire de le mettre aussi pour qu'il vive assez longtemps...
+        let mut ret = String::from("??");
+        println!("  Opération : {}",
+            match op
+            {
+                "gen" => "Génération de clé(s)",
+                "encrypt" => "Chiffrement",
+                "decrypt" => "Déchiffrement",
+                "sign" => "Signature",
+                "verify" => "Vérification / déchiffrement de signature",
+                _ => {
+                    for eop in self.oplist()
+                    {
+                        if eop.0 == op
+                        {
+                            ret = eop.2.clone();
+                            break;
+                        }
+                    }
+                    ret.as_str()
+                }
+            }
+        );
+        print!("  Moteur : ");
         match self
         {
             Self::Rsa(rsa) => {
+                println!("RSA");
                 let kpath = args.value_of("keyfile").unwrap();
+                println!("  Fichier clé : {}", kpath);
                 match op
                 {
                     "gen" => {
@@ -56,6 +84,9 @@ impl GenEngine
                             {
                                 GEN_THREADS
                             };
+                        println!("  Taille de clé : {}", ksize);
+                        println!("  Nombre de threads à utiliser : {}", nthreads);
+                        println!();
 
                         if ksize > 128
                         {
@@ -153,6 +184,11 @@ impl GenEngine
 
                         let msg = read_to_string(args.value_of("input").unwrap()).expect("-> Impossible de lire le fichier en entrée.");
                         let outpath = args.value_of("output").unwrap();
+
+                        println!("  Type de clé : {}", kt);
+                        println!("  Fichier en entrée : {}", args.value_of("input").unwrap());
+                        println!("  Fichier de sortie : {}", outpath);
+                        println!();
 
                         match op
                         {

@@ -109,6 +109,7 @@ fn main()
 
     if matches.is_present("list") 
     {
+        println!();
         println!("Moteurs cryptographiques disponibles :");
         for engine in GenEngine::list()
         {
@@ -127,9 +128,9 @@ fn main()
             println!("Opérations spécifiques au moteur {} :", engine);
             if let Some(engine) = GenEngine::resolve(&engine) 
             {
-                for op in engine.oplist() 
+                for op in engine.oplist()
                 {
-                    println!("- {}", op);
+                    println!("- {}", op.1);
                 }
             }
         }
