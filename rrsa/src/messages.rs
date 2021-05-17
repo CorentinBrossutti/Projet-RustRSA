@@ -39,7 +39,9 @@ impl MessageBuilder
     pub fn build(self) -> Message
     {
         let bsize = if let Some(bsize) = self.bsize { bsize } else { engines::BSIZE_DEF };
+        // La valeur numérique est soit celle indiquée dans le builder, soit la recomposition de la valeur textuelle (seul cas où la valeur numérique n'est pas calculée)
         let nval = if let Some(nval) = self.nval { nval } else { self.strv.unwrap().into_bytes().rejoin() };
+        // Les parties sont donc soit déjà présentes, soit elles sont calculées
         let parts = if let Some(parts) = self.parts { parts } else { nval.expl_r(bsize) };
 
         Message
@@ -155,11 +157,16 @@ impl Message
     /// Peut échouer si le message est chiffré, invalide, etc.
     pub fn to_str(&self) -> Result<String, FromUtf8Error>
     {
+        // On décompose la valeur numérique actuelle en blocs de taille 1 seul octet
+        // Afin de pouvoir ensuite...
         let v = self.nval.expl_r(1);
+        // ...décomposer chaque octet en u8
+        // 0x3f correspond au point d'interrogation en cas de problème sur un caractère en particulier
         let bytes = v.iter().map(| num | {
             num.to_u8().unwrap_or(0x3f)
         }).collect();
 
+        // Conversion des octets en chaîne
         String::from_utf8(bytes)
     }
 
@@ -172,9 +179,11 @@ impl Message
     /// Convertit le message en la représentation textuelle de ses parties.
     pub fn to_parts_str(&self) -> String
     {
+        // Chaque partie est convertie en texte (grand entier -> texte)
         let parts_str: Vec<String> = self.parts.iter().map(| part | {
             part.to_str_radix(NUM_STRING_RADIX)
         }).collect();
+        // Puis chaque partie est rejointe en une seule chaîne dont les parties sont séparées par `PARTS_STR_SEP`
         parts_str.join(PARTS_STR_SEP)
     }
 }

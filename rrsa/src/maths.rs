@@ -174,6 +174,7 @@ pub fn expcode(num: &BigUint) -> Option<BigUint>
 /// Le test est probabiliste et peut se tromper ; avec un nombre assez grand d'itérations `PRIME_ROUNDS`, cela est toutefois peu probable.
 pub fn isprime(num: &BigUint) -> bool
 {
+    // Le test étant probabiliste, il faut faire plusieurs itérations pour être raisonnablement certain du résultat
     for _ in 0..PRIME_ROUNDS
     {
         if !fmodpow(&(&PRIME_RN % num), &(num - 1u8), num).is_one()
@@ -189,9 +190,11 @@ pub fn isprime(num: &BigUint) -> bool
 pub fn rand_primelike(szb: u64) -> BigUint
 {
     let mut b = rand::thread_rng().gen_biguint(szb * 8);
+    // On met le dernier chiffre à zéro
     b /= 10u8;
     b *= 10u8;
 
+    // On génère un chiffre impair qui n'est pas 5 afin d'augmenter les chances que le nombre soit premier
     let mut digit = 0u8;
     while digit % 2 == 0 || digit == 5
     {

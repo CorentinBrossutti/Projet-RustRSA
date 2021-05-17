@@ -105,7 +105,7 @@ impl GenEngine
                             }
                         }
 
-                        println!("+ Début de la génération d'une paire de clés RSA de taille {} octets, soit RSA-{} ({} threads)", ksize, ksize * 16, nthreads);
+                        println!("+ Génération d'une paire de clés RSA de taille {} octets, soit RSA-{} ({} threads)", ksize, ksize * 16, nthreads);
                         let sw = Arc::from(Mutex::from(true));
                         let sw_c = Arc::clone(&sw);
                         let progress = thread::spawn(move || {

@@ -2,24 +2,28 @@ mod maths
 {
 
 
+    /// Tests des utilitaires d'extensions des nombres et vecteurs de nombres
     mod nvutil 
     {
         use crate::maths::{NumUtil, VecNumUtil};
         use num_bigint::BigUint;
 
 
+        /// Test nombre de chiffres d'un nombre en radix N
         #[test]
         fn nu_sz() 
         {
             assert_eq!(3, BigUint::from(321u16).sz(10));
         }
 
+        /// Test nombre d'octets d'un nombre
         #[test]
         fn nu_sz_b() 
         {
             assert_eq!(2, BigUint::from(432u16).sz_b());
         }
 
+        /// Test de décomposition / recomposition (vérification par rapport à l'original)
         #[test]
         fn join_expl() 
         {
@@ -34,6 +38,7 @@ mod maths
     use num_traits::ToPrimitive;
 
 
+    /// Test algorithme d'Euclide PGCD
     #[test]
     fn euclide() 
     {
@@ -41,6 +46,7 @@ mod maths
         assert_eq!(8u32, maths::euclide(&a, &b).to_u32().unwrap());
     }
 
+    /// Test exponentiation modulatoire
     #[test]
     fn modpow() 
     {
@@ -52,6 +58,7 @@ mod maths
         assert_eq!(a.modpow(&b, &c), maths::fmodpow(&a, &b, &c));
     }
 
+    /// Test code d'exposant
     #[test]
     fn expcode() 
     {
@@ -59,6 +66,7 @@ mod maths
         assert_eq!(2, maths::expcode(&x).unwrap().to_u32().unwrap());
     }
 
+    /// Test de la fonction de vérification de primalité
     #[test]
     fn isprime() 
     {
@@ -70,6 +78,7 @@ mod maths
 }
 
 
+/// Tests des structures de messages
 mod messages
 {
     use crate::messages::*;
@@ -77,6 +86,7 @@ mod messages
     use num_traits::Num;
 
 
+    /// Test des messages depuis des chaînes
     #[test]
     fn f_unf()
     {
@@ -85,6 +95,7 @@ mod messages
         assert_eq!("test", msg.to_str().unwrap());
     }
 
+    /// Test des messages depuis la représentation textuelle de nombres
     #[test]
     fn ns_uns()
     {
@@ -93,6 +104,7 @@ mod messages
         assert_eq!(BigUint::from_str_radix("8a240238dfljqslkfj2378273dfjqldksf8a240238dfljqslkfj2378273dfjqldksf", 36).unwrap().to_str_radix(36), msg.to_nstr());
     }
 
+    /// Test du découpage au sein des messages
     #[test]
     fn bd_dest()
     {
@@ -109,12 +121,14 @@ mod messages
 }
 
 
+/// Tests de la gestion des clés
 mod keys
 {
     use crate::{engines::RsaKey, keys::{Key, NumKey, KeyPair}};
     use num_bigint::BigUint;
 
 
+    /// Test de la sérialisation des clés numériques
     #[test]
     fn ser_str()
     {
@@ -122,12 +136,14 @@ mod keys
         assert_eq!("9", k.serialize_str());
     }
 
+    /// Test de la désérialisation des clés numériques
     #[test]
     fn from_str()
     {
         assert_eq!(BigUint::from(9u8), NumKey::from_str(String::from("9")).unwrap().value);
     }
 
+    /// Test de la désérialisation des paires de clés
     #[test]
     fn from_str_dpair()
     {
@@ -138,6 +154,7 @@ mod keys
         assert_eq!(k.1.1.value, BigUint::from(6u8));
     }
 
+    /// Test de la sérialisation des paires de clés
     #[test]
     fn ser_str_dpair()
     {
@@ -157,12 +174,14 @@ mod keys
 }
 
 
+/// Tests relatifs aux moteurs cryptographiques
 mod engines
 {
     use crate::engines::{Engine, Cesar};
     use num_bigint::BigUint;
 
 
+    /// Test du padding (ajout + retrait = original)
     #[test]
     fn pad_unpad()
     {
@@ -177,6 +196,7 @@ mod engines
     }
 
 
+    /// Tests relatifs au moteur RSA
     mod rsa
     {
         use crate::{engines::{Engine, Rsa, RSA_DEF_GEN_THREADS}, maths::{isprime, rand_primelike}, messages::*};
@@ -184,6 +204,7 @@ mod engines
         use num_bigint::BigUint;
 
 
+        /// Test génération de clé avec p et q 64 octets
         #[test]
         fn gen_64()
         {
@@ -191,6 +212,7 @@ mod engines
             let _k = rsa.generate(64u64, RSA_DEF_GEN_THREADS);
         }
 
+        /// Test génération de clé avec p et q 128 octets
         #[test]
         fn gen_128()
         {
@@ -198,6 +220,8 @@ mod engines
             let _k = rsa.generate(128u64, RSA_DEF_GEN_THREADS);
         }
 
+        /// Test génération de clé avec p et q 64 octets
+        /// Ignoré par défaut car trop long
         #[test]
         #[ignore = "Trop long"]
         fn gen_256()
@@ -206,6 +230,7 @@ mod engines
             let _k = rsa.generate(256u64, RSA_DEF_GEN_THREADS);
         }
 
+        /// Benchmark du temps de génération et de test de primalité pour différentes tailles de nombres
         #[test]
         #[ignore = "Benchmarking uniquement"]
         fn gen_time()
@@ -253,6 +278,7 @@ mod engines
             panic!();
         }
 
+        /// Test encodage et décodage (encodage + décodage = nombre orignal)
         #[test]
         fn encode_decode()
         {
@@ -267,6 +293,7 @@ mod engines
             assert_eq!(p, pp);
         }
 
+        /// Test chiffrement et déchiffrement d'un message (chiffrement + déchiffrement = original)
         #[test]
         fn encrypt_decrypt()
         {
@@ -281,7 +308,9 @@ mod engines
             assert_eq!("test rsa", msg.to_str().unwrap());
         }
 
+        /// Test de vérification du chiffrement + déchiffrement avec inversion des clés (chiffrement avec privée + déchiffrement avec privée)
         #[test]
+        #[ignore = "Pareil que sign_verify"]
         fn e_d_inv()
         {
             let mut msg = Message::str(String::from("test rsa")).build();
@@ -295,6 +324,7 @@ mod engines
             assert_eq!("test rsa", msg.to_str().unwrap());
         }
 
+        /// Test de signature et vérification d'un nombre (signature + déchiffrement signé = original)
         #[test]
         fn sign_verify()
         {
@@ -310,12 +340,14 @@ mod engines
     }
 
 
+    /// Tests relatifs au moteur césar
     mod cesar
     {
         use crate::{engines::{Engine, Cesar}, messages::*};
         use num_bigint::BigUint;
 
 
+        /// Test encodage et décodage (encodage + décodage = nombre orignal)
         #[test]
         fn encode_decode()
         {
@@ -330,6 +362,7 @@ mod engines
             assert_eq!(p, pp);
         }
 
+        /// Test chiffrement et déchiffrement d'un message (chiffrement + déchiffrement = original)
         #[test]
         fn encrypt_decrypt()
         {

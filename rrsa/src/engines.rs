@@ -140,28 +140,32 @@ impl Engine for Rsa
 
     fn generate(&self, sz_b: u64, n_threads: u8) -> Self::MainKey 
     {
+        // g_xx est un canal permettant de passer les entiers dont la primalité est à tester
         let (g_tx, g_rx) = channel::unbounded();
+        // f_xx est un canal permettant de passer des nombres premiers satisfaisant toutes les contraintes
         let (f_tx, f_rx) = channel::unbounded();
-
         let working = Arc::new(atomic::AtomicBool::new(true));
         
         for _ in 0..n_threads
         {
             let g_rx_c = g_rx.clone();
-            
             let f_tx_c = f_tx.clone();
             let f_rx_c = f_rx.clone();
-            
             let working_f_c = working.clone();
+
             thread::spawn(move || {
                 let mut temp;
                 while working_f_c.load(atomic::Ordering::Relaxed)
                 {
+                    // On prend un nombre premier généré
                     temp = g_rx_c.recv().unwrap();
+                    // On fait le test de primalité
                     if maths::isprime(&temp)
                     {
+                        // S'il est premier on l'envoie dans le canal de sortie
                         f_tx_c.send(temp).expect("Rsa.generate : erreur dans le remplissage.");
                     }
+                    // Si deux entiers premiers sont disponibles, on sort (la génération de p et q est terminée)
                     if f_rx_c.len() >= 2
                     {
                         working_f_c.store(false, atomic::Ordering::Relaxed);
@@ -170,8 +174,11 @@ impl Engine for Rsa
             });
         }
 
+        // Cette boucle a lieu en parralèle des autres threads et ne s'arrête que lorsque les threads signalent que deux entiers premiers sont disponibles
+        // Pas besoin de join les threads
         while working.load(atomic::Ordering::Relaxed)
         {
+            // On remplit le canal avec des entiers suscesptibles d'être premiers
             g_tx.send(maths::rand_primelike(sz_b)).expect("Rsa.generate : erreur dans la génération.");
         }
 
