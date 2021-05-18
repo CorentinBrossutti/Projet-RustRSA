@@ -1,5 +1,5 @@
 use crate::{keys::*, maths, messages::Message};
-use std::{sync::{Arc, atomic}, thread};
+use std::{convert::TryInto, sync::{Arc, atomic}, thread};
 use crossbeam::channel;
 use num_bigint::{BigUint, RandBigInt, ToBigInt};
 use num_traits::Signed;
@@ -119,7 +119,9 @@ impl Engine for Cesar
 /// Taille par défaut des entiers premiers (p et q) à générer pour RSA. Pour du RSA-2048 (par défaut), on génère 128 octets.
 pub const RSA_DEF_PRIME_SIZEB: u64 = 128;
 /// Nombre de threads par défaut pour la génération RSA. Ils ne sont utilisés que pour la vérification, très consommatrice en temps processeur.
-pub const RSA_DEF_GEN_THREADS: u8 = 3;
+/// Le nombre par défaut de 4 correspond aux processeurs modernes dont la plupart ont quatre coeurs.
+/// Ce nombre n'est utilisé qu'en cas d'échec de l'obtention du nombre de coeurs du processeur de la machine locale ; sinon ce dernier est utilisé (par défaut) afin de paralléliser au maximum la génération.
+pub const RSA_DEF_GEN_THREADS: u8 = 4;
 
 /// Alias de type pour les clés de chiffrement RSA, qui sont des paires de clés numériques (n, e).
 pub type PublicKey = KeyPair<NumKey, NumKey>;
@@ -131,6 +133,15 @@ pub type RsaKey = KeyPair<PublicKey, PrivateKey>;
 
 /// Implémentation d'un moteur cryptographique RSA complet.
 pub struct Rsa;
+
+impl Rsa
+{
+    /// Donne le nombre par défaut de threads à utiliser pour cette machine
+    pub fn def_gthreads(&self) -> u8
+    {
+        num_cpus::get().try_into().unwrap_or(RSA_DEF_GEN_THREADS)
+    } 
+}
 
 impl Engine for Rsa
 {
@@ -201,7 +212,7 @@ impl Engine for Rsa
 
     fn gen_def(&self) -> Self::MainKey 
     {
-        self.generate(RSA_DEF_PRIME_SIZEB, RSA_DEF_GEN_THREADS)  
+        self.generate(RSA_DEF_PRIME_SIZEB, self.def_gthreads())  
     }
 
     fn run_crypt(&self, num: &mut BigUint, key: &Self::EncryptionKey) {

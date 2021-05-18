@@ -233,7 +233,7 @@ mod engines
         /// Benchmark du temps de génération et de test de primalité pour différentes tailles de nombres
         #[test]
         #[ignore = "Benchmarking uniquement"]
-        fn gen_time()
+        fn bench_primality()
         {
             let mut tpoint = Instant::now();
             for _ in 0..100
@@ -274,6 +274,29 @@ mod engines
                 isprime(&n256);
             }
             println!("Vérification 256 octets en {} ms soit {} ms par itération.", tpoint.elapsed().as_millis(), tpoint.elapsed().as_millis() / 100);
+
+            panic!();
+        }
+
+        /// Benchmark du temps de génération en fonction du nombre de threads
+        #[test]
+        #[ignore = "Benchmark uniquement"]
+        fn bench_gen_time()
+        {
+            let mut tpoint = Instant::now();
+            let rsa = Rsa;
+            let iters: u128 = 20;
+            let tmax: u8 = 6;
+
+            for i in 1..=tmax
+            {
+                for _ in 0..iters
+                {
+                    rsa.generate(32, i);
+                }
+                println!("Génération 32 octets en {} ms avec {} threads, soit {} ms par itération", tpoint.elapsed().as_millis(), i, tpoint.elapsed().as_millis() / iters);
+                tpoint = Instant::now();
+            }
 
             panic!();
         }

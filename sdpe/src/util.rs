@@ -82,7 +82,7 @@ impl GenEngine
                             }
                             else
                             {
-                                RSA_DEF_GEN_THREADS
+                                rsa.def_gthreads()
                             };
                         println!("  Taille de clé : {}", ksize);
                         println!("  Nombre de threads à utiliser : {}", nthreads);
@@ -91,7 +91,7 @@ impl GenEngine
                         if ksize > 128
                         {
                             println!("= Attention : vous avez spécifié une taille de clé pour RSA supérieure à 128. L'opération peut prendre un certain temps.");
-                            println!("  A titre indicatif, une génération en 256 octets peut prendre jusqu'à 1m30.");
+                            println!("  A titre indicatif, une génération en 256 octets prend en moyenne une minute.");
                             println!();
                         }
 

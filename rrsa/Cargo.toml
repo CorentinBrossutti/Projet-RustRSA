@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 clap = "2.33"
+num_cpus = "1.13.0"
 crossbeam = "0.8.0"
 rand = "0.8"
 num-traits = "0.2"
